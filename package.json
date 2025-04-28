@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/node": "^22.13.11",
     "axios": "^1.9.0",
+    "body-parser": "^2.2.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0"

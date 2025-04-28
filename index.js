@@ -101,7 +101,7 @@ app.get('/generate', async (req, res) => {
             await fs.writeFile(filePath, imgData.data);
 
             // Push your hosted URL
-            myServerUrls.push(`https://bc95dd8d-bcd8-47e9-a595-2e54c072ee70-00-3rlc9l8teaan9.kirk.replit.dev/images/${fileName}`);
+            myServerUrls.push(`https://ai-art-hassan-api-pw4i.onrender.com/images/${fileName}`);
             // NOTE: Change "yourdomain.com" to your actual hosting domain when you deploy!
         }
 

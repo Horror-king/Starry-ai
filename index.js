@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const fs = require('fs-extra');
+const path = require('path');
 
 const app = express();
 const port = 3000;
@@ -8,8 +10,15 @@ const port = 3000;
 // Your StarryAI API Key
 const API_KEY = 'NYo6Sx1lutC92_o98m6NET7RNDdQZw';
 
+// Create images folder if not exists
+const imagesFolder = path.join(__dirname, 'images');
+fs.ensureDirSync(imagesFolder);
+
 // Middleware
 app.use(bodyParser.json());
+
+// Serve images statically
+app.use('/images', express.static(imagesFolder));
 
 // /generate endpoint
 app.get('/generate', async (req, res) => {
@@ -48,10 +57,10 @@ app.get('/generate', async (req, res) => {
 
         // Step 2: Poll for status
         let status = '';
-        let images = [];
+        let starryImages = [];
         let retries = 0;
 
-        while (retries < 60) { // Retry max 60 times (around 3 minutes)
+        while (retries < 60) {
             const statusResponse = await axios.get(
                 `https://api.starryai.com/creations/${creationId}/`,
                 {
@@ -66,23 +75,38 @@ app.get('/generate', async (req, res) => {
             console.log(`[DEBUG] Current status: ${status} (retry ${retries + 1}/60)`);
 
             if (status === 'completed') {
-                images = statusResponse.data.images.map(img => img.url);
+                starryImages = statusResponse.data.images.map(img => img.url);
                 break;
             } else if (status === 'failed') {
                 throw new Error('Image generation failed.');
             }
 
-            // Wait 3 seconds
             await new Promise(resolve => setTimeout(resolve, 3000));
             retries++;
         }
 
-        if (images.length === 0) {
+        if (starryImages.length === 0) {
             return res.status(500).json({ error: 'Image generation timed out after 3 minutes.' });
         }
 
-        // Step 3: Return final images
-        res.json({ images });
+        // Step 3: Download images and save locally
+        const myServerUrls = [];
+
+        for (let i = 0; i < starryImages.length; i++) {
+            const imgUrl = starryImages[i];
+            const fileName = `generated_${Date.now()}_${i}.jpg`;
+            const filePath = path.join(imagesFolder, fileName);
+
+            const imgData = await axios.get(imgUrl, { responseType: 'arraybuffer' });
+            await fs.writeFile(filePath, imgData.data);
+
+            // Push your hosted URL
+            myServerUrls.push(`https://bc95dd8d-bcd8-47e9-a595-2e54c072ee70-00-3rlc9l8teaan9.kirk.replit.dev/images/${fileName}`);
+            // NOTE: Change "yourdomain.com" to your actual hosting domain when you deploy!
+        }
+
+        // Step 4: Return YOUR server image links
+        res.json({ images: myServerUrls });
 
     } catch (error) {
         console.error('[ERROR] API Request failed:', error.response ? error.response.data : error.message);
